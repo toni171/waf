@@ -1,0 +1,66 @@
+version: '3.9'
+
+services:
+  traffic_inspection:
+    build: ./traffic_inspection
+    ports:
+      - "8000:8000"
+    depends_on:
+      - threat_detection
+      - logging
+      - monitoring
+    networks:
+      - waf_network
+
+  threat_detection:
+    build: ./threat_detection
+    ports:
+      - "8001:8001"
+    depends_on:
+      - policy_management
+    networks:
+      - waf_network
+
+  policy_management:
+    build: ./policy_management
+    ports:
+      - "8002:8002"
+    networks:
+      - waf_network
+
+  monitoring:
+    build: ./monitoring
+    ports:
+      - "8003:8003"
+    networks:
+      - waf_network
+
+  logging:
+    build: ./logging
+    ports:
+      - "8004:8004"
+    networks:
+      - waf_network
+
+  admin_panel_frontend:
+    build:
+      context: ./admin_panel/frontend
+    ports:
+      - "3000:80"
+    networks:
+      - waf_network
+    depends_on:
+      - admin_panel_backend
+
+  admin_panel_backend:
+    build:
+      context: ./admin_panel/backend
+    ports:
+      - "8005:8005"
+    networks:
+      - waf_network
+
+networks:
+  waf_network:
+    name: waf_network
+    driver: bridge
