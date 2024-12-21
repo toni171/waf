@@ -1,0 +1,56 @@
+stages:
+  - install
+  - test
+  - build
+
+# Variabile per il nome del registro Docker
+variables:
+  DOCKER_IMAGE: registry.gitlab.com/toni171/waf
+
+install_dependencies:
+  stage: install
+  image: python:3.9
+  script:
+    - pip install -r traffic_inspection/requirements.txt
+    - pip install -r logging/requirements.txt
+    - pip install -r policy_management/requirements.txt
+    - pip install -r threat_detection/requirements.txt
+    - cd admin_panel/frontend
+    - npm install
+    - cd ../../
+
+test_backend:
+  stage: test
+  image: python:3.9
+  script:
+    - pytest traffic_inspection/tests/
+    - pytest logging/tests/
+    - pytest policy_management/tests/
+    - pytest threat_detection/tests/
+  artifacts:
+    when: always
+    paths:
+      - reports/
+
+test_frontend:
+  stage: test
+  image: node:16
+  script:
+    - cd admin_panel/frontend
+    - npm run test
+
+build_docker_images:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - echo $CI_JOB_TOKEN | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+  script:
+    - docker build -t $DOCKER_IMAGE:traffic_inspection traffic_inspection/
+    - docker build -t $DOCKER_IMAGE:logging logging/
+    - docker build -t $DOCKER_IMAGE:policy_management policy_management/
+    - docker build -t $DOCKER_IMAGE:threat_detection threat_detection/
+    - docker build -t $DOCKER_IMAGE:admin_panel_backend admin_panel/backend/
+    - docker build -t $DOCKER_IMAGE:admin_panel_frontend admin_panel/frontend/
+    - docker push $DOCKER_IMAGE
