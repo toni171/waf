@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   traffic_inspection:
-    build: ./traffic_inspection
+    image: toni171/waf:traffic_inspection
     ports:
       - "8000:8000"
     depends_on:
@@ -13,7 +13,7 @@ services:
       - waf_network
 
   threat_detection:
-    build: ./threat_detection
+    image: toni171/waf:threat_detection
     ports:
       - "8001:8001"
     depends_on:
@@ -22,29 +22,28 @@ services:
       - waf_network
 
   policy_management:
-    build: ./policy_management
+    image: toni171/waf:policy_management
     ports:
       - "8002:8002"
     networks:
       - waf_network
 
   monitoring:
-    build: ./monitoring
+    image: toni171/waf:monitoring
     ports:
       - "8003:8003"
     networks:
       - waf_network
 
   logging:
-    build: ./logging
+    image: toni171/waf:logging
     ports:
       - "8004:8004"
     networks:
       - waf_network
 
   admin_panel_frontend:
-    build:
-      context: ./admin_panel/frontend
+    image: toni171/waf:admin_panel_frontend
     ports:
       - "3000:80"
     networks:
@@ -53,8 +52,7 @@ services:
       - admin_panel_backend
 
   admin_panel_backend:
-    build:
-      context: ./admin_panel/backend
+    image: toni171/waf:admin_panel_backend
     ports:
       - "8005:8005"
     networks:

@@ -2,24 +2,38 @@ stages:
   - install
   - test
   - build
+  - push
 
-# Variabile per il nome del registro Docker
 variables:
-  DOCKER_IMAGE: registry.gitlab.com/toni171/waf
+  DOCKER_IMAGE: toni171/waf  # Sostituisci "yourusername" con il tuo username Docker Hub
 
 install_dependencies:
   stage: install
-  image: python:3.9
+  image: node:16
   script:
+    # Installa le dipendenze del backend dell'admin panel
+    - cd admin_panel/backend
+    - npm install
+    - cd ../../
+    # Installa le dipendenze degli altri moduli
     - pip install -r traffic_inspection/requirements.txt
     - pip install -r logging/requirements.txt
     - pip install -r policy_management/requirements.txt
     - pip install -r threat_detection/requirements.txt
+    # Installa le dipendenze del frontend dell'admin panel
     - cd admin_panel/frontend
     - npm install
     - cd ../../
 
-test_backend:
+test_backend_node:
+  stage: test
+  image: node:16
+  script:
+    - cd admin_panel/backend
+    - npm run test  # Esegue i test del backend dell'admin panel
+    - cd ../../
+
+test_backend_python:
   stage: test
   image: python:3.9
   script:
@@ -37,15 +51,13 @@ test_frontend:
   image: node:16
   script:
     - cd admin_panel/frontend
-    - npm run test
+    - npm run test  # Esegue i test del frontend dell'admin panel
 
 build_docker_images:
   stage: build
   image: docker:latest
   services:
     - docker:dind
-  before_script:
-    - echo $CI_JOB_TOKEN | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
     - docker build -t $DOCKER_IMAGE:traffic_inspection traffic_inspection/
     - docker build -t $DOCKER_IMAGE:logging logging/
@@ -53,4 +65,18 @@ build_docker_images:
     - docker build -t $DOCKER_IMAGE:threat_detection threat_detection/
     - docker build -t $DOCKER_IMAGE:admin_panel_backend admin_panel/backend/
     - docker build -t $DOCKER_IMAGE:admin_panel_frontend admin_panel/frontend/
-    - docker push $DOCKER_IMAGE
+
+push_docker_images:
+  stage: push
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+  script:
+    - docker push $DOCKER_IMAGE:traffic_inspection
+    - docker push $DOCKER_IMAGE:logging
+    - docker push $DOCKER_IMAGE:policy_management
+    - docker push $DOCKER_IMAGE:threat_detection
+    - docker push $DOCKER_IMAGE:admin_panel_backend
+    - docker push $DOCKER_IMAGE:admin_panel_frontend
