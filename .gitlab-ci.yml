@@ -3,6 +3,7 @@ stages:
   - test
   - build
   - push
+  - deploy
 
 variables:
   DOCKER_IMAGE: toni171/waf  # Sostituisci "yourusername" con il tuo username Docker Hub
@@ -80,3 +81,19 @@ push_docker_images:
     - docker push $DOCKER_IMAGE:threat_detection
     - docker push $DOCKER_IMAGE:admin_panel_backend
     - docker push $DOCKER_IMAGE:admin_panel_frontend
+
+deploy_local:
+  stage: deploy
+  image: alpine:latest
+  services:
+    - docker:dind
+  before_script:
+    - apk add --no-cache docker-compose
+  script:
+    - docker-compose down
+    - docker-compose up -d
+  environment:
+    name: local
+    url: http://localhost:8000
+  only:
+    - main
